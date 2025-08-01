@@ -5,6 +5,8 @@
 #include "Plugins.h"
 #endif
 
+#include "Global.h"
+
 #include "Storage.h"
 #include "AliasManager.h"
 
@@ -12,40 +14,22 @@
 #include "RunApp.h"
 
 
-static constexpr const char* STORAGE_DIR = "./storage/";
-static constexpr const char* PLUGIN_DIR = "./plugins/";
-
-static std::map<std::string, App*> Apps;
-
 App* search(std::string name)
 {
-	for (const auto& app : Apps) {
+	for (const auto& app : Global::instance->apps()) {
 		if (app.first == name) return app.second;
 	}
 
 	return nullptr;
 }
 
+
+static Global* G = Global::instance;
+
 int main(int argc, char* argv[])
 {
-	// init Apps
-	{
-		Apps = {
-			{ std::string(ConverterApp::Name), new ConverterApp() },
-			{ std::string(RunApp::Name), new RunApp(PLUGIN_DIR) },
-		};
-	}
-
-	auto aliasManager = new AliasManager("aliasmanager", STORAGE_DIR);
-	auto status = aliasManager->init({
-			{"converter", ConverterApp::Name},
-			{"conv", ConverterApp::Name},
-		});
-
-	if (status.isError()) {
-		std::cout << "Could not initialize AliasManager: " << status.msg << std::endl;
-		return status.intCode();
-	}
+	auto istatus = Global::instance->init();
+	if (istatus != 0) return istatus;
 
 	assert(argc > 1);
 
@@ -54,7 +38,7 @@ int main(int argc, char* argv[])
 		auto appName = std::string(argv[1]);
 		auto app = search(appName);
 		if (app == nullptr) {
-			auto r = aliasManager->findAlias(appName);
+			auto r = G->aliasManager()->findAlias(appName);
 			if (r.getStatus().isOk()) {
 				app = search(*r.getValue());
 			}
@@ -65,7 +49,7 @@ int main(int argc, char* argv[])
 		}
 		// lowercased alias
 		if (app == nullptr) {
-			auto r = aliasManager->findAlias(appName);
+			auto r = G->aliasManager()->findAlias(appName);
 			if (r.getStatus().isOk()) {
 				app = search(*r.getValue());
 			}

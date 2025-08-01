@@ -49,6 +49,29 @@ Status Storage::readKV(std::string name, Value* out) {
 	return Status(StatusCode::SC_OK);
 }
 
+Status Storage::deleteKV(std::string name, Value::Type t) {
+	auto c = checkForWritable();
+	if (c.isError()) return c;
+
+	assert(t != Value::Type::CUSTOM);
+	assert(t != Value::Type::UNDEFINED);
+
+	if (kv.find(name) == kv.end()) {
+		return StatusCode::SC_ERROR_NOT_FOUND;
+	}
+
+	resetSaved();
+
+	auto v = kv.at(name);
+	if (v.getType() != t) {
+		return Status(StatusCode::SC_ERROR_INVALID, std::string("type of requested key '") + name + "' is different");
+	}
+
+	kv.erase(name);
+
+	return Status(StatusCode::SC_OK);
+}
+
 
 Status Storage::checkForWritable() {
 	if (readonly) {

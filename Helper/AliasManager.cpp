@@ -38,15 +38,28 @@
 //	return { StatusCode::SC_OK, &_aliases[alias] };
 //}
 
+bool AliasManager::save()
+{
+	auto s = st->deleteRecord<std::vector<std::string>>("_registered");
+	if (s.isError() && s.code != StatusCode::SC_ERROR_NOT_FOUND) return false;
+	s = st->writeRecord("_registered", &_registered);
+	if (s.isError()) return false;
+
+	s = st->save();
+	if (s.isError()) return false;
+
+	return true;
+}
+
 bool AliasManager::registerAlias(std::string alias, std::string expansion)
 {
 	if (!st->isLoaded()) return false;
 
 	if (st->writeKVString(alias, expansion).isError()) return false;
 
-	st->save();
+	_registered.push_back(alias);
 
-	return true;
+	return save();
 }
 
 bool AliasManager::registerAlias(std::string alias, vector<std::string> expansion)
@@ -54,6 +67,25 @@ bool AliasManager::registerAlias(std::string alias, vector<std::string> expansio
 	std::string s;
 	for (auto& p : expansion) s += p;
 	return registerAlias(alias, s);
+}
+
+bool AliasManager::unregisterAlias(std::string alias)
+{
+	if (!st->isLoaded()) return false;
+
+	auto tmp = new std::string;
+	if (st->readKVString(alias, tmp).isError()) return false;
+	delete tmp;
+
+	auto stat = st->deleteKVString(alias);
+	assert(stat.isOk());
+
+	auto it = std::find(_registered.begin(), _registered.end(), alias);
+	assert(it != _registered.end());
+
+	_registered.erase(it);
+	
+	return save();
 }
 
 const Result<std::string> AliasManager::findAlias(std::string alias) const
@@ -81,4 +113,71 @@ const Result<std::vector<std::string>> AliasManager::findAliasParts(std::string 
 		parts->push_back(part);
 
 	return { Status::OK(), std::move(parts) };
+}
+
+
+Status AliasManager::init(std::initializer_list<std::pair<std::string, std::string>> defaultAliases, bool strict)
+{
+	using T = std::vector<std::string>;
+	st->registerTypeSerializer<T>([](const T* v, Storage::RecordBuffer* b) -> Status {
+		auto status = b->writeIntField("__size__", v->size());
+		if (status.isError()) return status;
+
+		for (int i = 0; i < v->size(); i++) {
+			status = b->writeStringField(std::to_string(i), (*v)[i]);
+			if (status.isError()) return status;
+		}
+
+		return StatusCode::SC_OK;
+	});
+	st->registerTypeDeserializer<T>([](T** v, const Storage::RecordView* b) -> Status {
+		*v = new T();
+
+		int size;
+		auto status = b->readIntField("__size__", &size);
+		if (status.isError()) return status;
+
+		for (int i = 0; i < size; i++) {
+			std::string item;
+			status = b->readStringField(std::to_string(i), &item);
+			if (status.isError()) return status;
+			(*v)->push_back(item);
+		}
+
+		return StatusCode::SC_OK;
+	});
+
+	auto status = st->load(true);
+	if (status.isError()) return status;
+
+	T* _reg = nullptr;
+	status = st->readRecord("_registered", &_reg);
+	if (status.code == StatusCode::SC_ERROR_NOT_FOUND) {
+		_registered = {};
+	}
+	else {
+		_registered = *_reg;
+		delete _reg;
+	}
+
+	int skipped = 0;
+	for (auto it = defaultAliases.begin(); it != defaultAliases.end(); it++) {
+		if (findAlias(it->first).getStatus().isOk()) {
+			// Alias already exists
+
+			if (strict) {
+				return Status(StatusCode::SC_ERROR_ALREADY_EXISTS, it->first);
+			}
+
+			skipped++;
+			continue;
+		}
+
+		registerAlias(it->first, it->second);
+	}
+
+	status = std::move(st->save());
+	if (status.isError()) return status;
+
+	return Status(StatusCode::SC_OK, std::to_string(skipped));
 }

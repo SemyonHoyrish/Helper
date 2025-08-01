@@ -261,6 +261,23 @@ public:
 		return s;
 	}
 
+	Status deleteKVUInt(std::string name)
+	{
+		return deleteKV(name, Value::Type::UINT);
+	}
+	Status deleteKVInt(std::string name)
+	{
+		return deleteKV(name, Value::Type::INT);
+	}
+	Status deleteKVChar(std::string name)
+	{
+		return deleteKV(name, Value::Type::CHAR);
+	}
+	Status deleteKVString(std::string name)
+	{
+		return deleteKV(name, Value::Type::STRING);
+	}
+
 	template<class T>
 	StatusCode registerTypeSerializer(std::function<Status(const T*, RecordBuffer*)> f);
 	template<class T>
@@ -273,6 +290,9 @@ public:
 	template<class T>
 	Status readRecord(std::string name, T** out);
 
+	template<class T>
+	Status deleteRecord(std::string name);
+	
 	static const std::vector<NamedValue>& extract(const Value& v) {
 		if (v.getCustomType() == static_cast<uint32_t>(CustomType::RecordBuffer)) {
 			return reinterpret_cast<const RecordBuffer*>(v.getRaw())->collect();
@@ -307,6 +327,8 @@ private:
 	COMMONLIB_API Status writeKV(std::string name, Value value);
 
 	COMMONLIB_API Status readKV(std::string name, Value* out);
+
+	COMMONLIB_API Status deleteKV(std::string name, Value::Type t);
 
 
 	void writeRecordField(BinaryWriter*, size_t&, const NamedValue&);
@@ -371,6 +393,10 @@ Status Storage::writeRecord(std::string name, T* value) {
 		return Status(StatusCode::SC_ERROR_NOT_FOUND, std::string("No type serializers registered for type ") + ti.name());
 	}
 
+	if (records.find(name) != records.end()) {
+		return StatusCode::SC_ERROR_ALREADY_EXISTS;
+	}
+
 	auto rb = new RecordBuffer(this);
 	Status convst = serializers[ti](value, rb);
 	if (convst.isOk())
@@ -399,4 +425,36 @@ Status Storage::readRecord(std::string name, T** value) {
 	auto rv = RecordView(this, e);
 
 	return deserializers[ti]((void**)value, &rv);
+}
+
+template<class T>
+Status Storage::deleteRecord(std::string name) {
+	if (!isLoaded()) {
+		return Status(StatusCode::SC_ERROR_UNAVAILABLE, "Storage has not been loaded yet");
+	}
+
+	const type_info& ti = typeid(T);
+
+	if (deserializers.find(ti) == deserializers.end()) {
+		return Status(StatusCode::SC_ERROR_NOT_FOUND, std::string("No type deserializers registered for type ") + ti.name());
+	}
+
+	if (records.find(name) == records.end()) {
+		return Status(StatusCode::SC_ERROR_NOT_FOUND);
+	}
+
+	auto e = records[name];
+	auto rv = RecordView(this, e);
+	T* _val = nullptr;
+	T** value = &_val;
+	auto status = deserializers[ti]((void**)value, &rv);
+
+	if (status.isError()) {
+		return StatusCode::SC_ERROR_INVALID;
+	}
+
+	records.erase(name);
+	resetSaved();
+
+	return StatusCode::SC_OK;
 }
