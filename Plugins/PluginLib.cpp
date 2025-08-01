@@ -37,9 +37,32 @@ const char* newString(const char* str) {
 	return nstr;
 }
 
+int pl_assertArgsCount(lua_State* state) {
+	const int n = lua_gettop(state);
+	
+	if (n != 2) {
+		lua_pushliteral(state, "assertArgsCount expects 2 arguments (argc, expected)"); // TODO: add usefil arguments
+		lua_error(state);
+		return 0;
+	}
+
+	lua_Integer argc = lua_tointeger(state, 1);
+	lua_Integer expected = lua_tointeger(state, 2);
+
+	if (argc != expected) {
+		std::cout << "[" << getCurrentPlugin()->name << ":: expects] " << expected << " arguments, but has reported that got " << argc << std::endl;
+		lua_pushliteral(state, "Incorrect number of arguments");
+		lua_error(state);
+		return 0;
+	}
+
+	return 0;
+}
+
 static const luaL_Reg funcs[] = {
 		{newString("print"), pl_print},
 		{newString("input"), pl_input},
+		{newString("assertArgsCount"), pl_assertArgsCount},
 };
 
 int loadPluginLib(lua_State* state) {

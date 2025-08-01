@@ -137,11 +137,13 @@ xcopy /y /d "..\$(IntDir)\Helper.exe" "$(OutDir)..\WorkDir\"</Command>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="ConverterApp.cpp" />
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="RunApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AliasManager.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="ConverterApp.h" />
+    <ClInclude Include="RunApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -338,6 +338,7 @@ bool executePlugin(PluginInfo plugin, lua_State* executableState, const char** a
 
 	lua_getglobal(state, plugin.name);
 	
+	lua_pushinteger(state, plugin.argc);
 	for (size_t i = 0; i < plugin.argc; i++) {
 		lua_pushstring(state, args[i]);
 	}
@@ -346,10 +347,10 @@ bool executePlugin(PluginInfo plugin, lua_State* executableState, const char** a
 	addPluginLib(state);
 	//addRuntimeInfo(plugin, state);
 	
-	auto status = lua_pcall(state, plugin.argc, PLUGIN_RETURN_VALUE_COUNT, 0);
+	auto status = lua_pcall(state, plugin.argc + 1, PLUGIN_RETURN_VALUE_COUNT, 0);
 	if (status != 0) {
 		// TODO:? maybe instead of printing error message, just put it in resMsg;
-		std::cout << "Error from plugin (code=" << status << "): " << std::endl;
+		std::cout << "Error from plugin (lcode=" << status << "): " << std::endl;
 		std::cout << lua_tostring(state, -1) << std::endl;
 		lua_pop(state, 1);
 		lua_close(state);
@@ -377,7 +378,7 @@ bool executePlugin(PluginInfo plugin, lua_State* executableState, const char** a
 
 
 
-void runPlugin(const char* name, const char** args, const size_t argc) {
+Status runPlugin(const char* name, const char** args, const size_t argc, const char* pluginDirPath) {
 	PluginInfo pl = {
 		name,
 		argc
@@ -385,27 +386,31 @@ void runPlugin(const char* name, const char** args, const size_t argc) {
 
 	setCurrentPlugin(pl);
 
-	auto buff = readPluginFile(pl);
+	auto buff = readPluginFile(pl, pluginDirPath);
 	auto vs = validateLoadedPlugin(pl, buff);
 	if (!vs) {
-		std::cout << "Plugin '" << pl.name << "' has not passed validation!" << std::endl;
-		return;
+		return Status(StatusCode::SC_ERROR_INVALID, "Plugin '" + std::string(pl.name) + "' has not passed validation!");
+		//std::cout << "Plugin '" << pl.name << "' has not passed validation!" << std::endl;
+		//return;
 	}
 	auto es = extractPluginContent(pl, vs);
 	if (!es) {
-		std::cout << "Error while preparing for execution, plugin: '" << pl.name << "'" << std::endl;
-		return;
+		return Status(StatusCode::SC_ERROR, "Error while preparing for execution, plugin: '" + std::string(pl.name) + "'");
+		//std::cout << "Error while preparing for execution, plugin: '" << pl.name << "'" << std::endl;
+		//return;
 	}
 
 	long long res;
 	char* msg;
 	auto st = executePlugin(pl, es, args, &res, &msg);
-	if (!st) return;
-
-	std::cout << "Plugin finished, code=" << res << std::endl;
-	std::cout << "Message: " << msg << std::endl;
+	if (!st) return StatusCode::SC_ERROR;
 
 	unsetCurrentPlugin();
+
+	//std::cout << "Plugin finished, code=" << res << std::endl;
+	//std::cout << "Message: " << msg << std::endl;
+
+	return Status(StatusCode::SC_OK, "Plugin finished, code=" + std::to_string(res) + "\n" + "Message: " + std::string(msg));
 }
 
 

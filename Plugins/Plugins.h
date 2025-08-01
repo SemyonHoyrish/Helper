@@ -3,8 +3,11 @@
 #include "lua.hpp"
 
 #include <iostream>
+#include <string>
 #include <assert.h>
 #include "Buffer.h"
+#include "Status.h"
+#include "CommonLib.h"
 
 
 #define UNUSED(x) (void)x
@@ -39,7 +42,7 @@ static inline int getLuaStackSize(lua_State* L) {
 	return lua_gettop(L);
 }
 
-#ifdef _DEBUG
+#ifdef LOGGING_LEVEL_DEBUG
 #define DEBUG_PRINT_DIVIDER() do { std::cout << "--- ===== ===== ===== ---" << std::endl; } while(0)
 #define DEBUG_printLuaStackSize(state) do { std::cout << "lua stack size: " << getLuaStackSize(state) << std::endl; } while(0)
 #define DEBUG_printLuaTypename(state, idx) do { std::cout << "lua stack(" << idx << ") typename: " << luaL_typename(state, idx) << std::endl; } while(0)
@@ -60,11 +63,7 @@ static inline int getLuaStackSize(lua_State* L) {
 #define ASSERT_STACK_SIZE(state, n) assert("Bad stack size" && getLuaStackSize(state) == n)
 
 
-static inline const char* getPluginDirectory() {
-	return ".\\";
-}
-
-void runPlugin(const char* name, const char** args, const size_t argc);
+Status runPlugin(const char* name, const char** args, const size_t argc, const char* pluginDirPath = "");
 
 typedef struct {
 	const char* name;
@@ -72,7 +71,7 @@ typedef struct {
 } PluginInfo;
 
 // plguinDirPath should be "" or end with a slash.
-BinaryBuffer* readPluginFile(PluginInfo plugin, const char* plguinDirPath = getPluginDirectory());
+BinaryBuffer* readPluginFile(PluginInfo plugin, const char* plguinDirPath);
 
 
 //typedef enum {
@@ -104,7 +103,7 @@ bool validatePluginDataTable(PluginInfo plugin, lua_State* validationState);
 
 lua_State* extractPluginContent(PluginInfo plugin, lua_State* validationState);
 
-
+// TODO: Also return Status instead of bool?
 bool executePlugin(PluginInfo plugin, lua_State* executableState, const char** args, long long* res, char** resMsg);
 
 //void addRuntimeInfo(PluginInfo plugin, lua_State* state);

@@ -9,9 +9,11 @@
 #include "AliasManager.h"
 
 #include "ConverterApp.h"
+#include "RunApp.h"
 
 
 static constexpr const char* STORAGE_DIR = "./storage/";
+static constexpr const char* PLUGIN_DIR = "./plugins/";
 
 static std::map<std::string, App*> Apps;
 
@@ -30,6 +32,7 @@ int main(int argc, char* argv[])
 	{
 		Apps = {
 			{ std::string(ConverterApp::Name), new ConverterApp() },
+			{ std::string(RunApp::Name), new RunApp(PLUGIN_DIR) },
 		};
 	}
 
@@ -315,49 +318,5 @@ int main(int argc, char* argv[])
 //		int a;
 //	}
 //
-//
-//}
-
-//int main(int argc, char* argv[])
-//{
-//	std::cout << "loading plugin" << std::endl;
-//	
-//	//todo argc > 1;
-//	const char* pluginName = argv[1];
-//	const char** plargs = new const char* [argc - 2];
-//
-//	for (int i = 2; i < argc; i++) {
-//		//std::cout << i << ": '" << argv[i] << "'" << std::endl;
-//		plargs[i - 2] = argv[i];
-//	}
-//
-//	runPlugin(pluginName, plargs, argc - 2);
-//}
-
-//
-//int main()
-//{
-//    std::cout << "Hello World!\n";
-//
-//    auto res = readPluginFile({ "PluginName", 0 }, ".\\");
-//    DEBUG_PRINT_DIVIDER();
-//
-//
-//    auto vstate = validateLoadedPlugin({ "PluginName", 0 }, res);
-//
-//    auto executableState = extractPluginContent({ "PluginName", 0 }, vstate);
-//
-//
-//    long long plres;
-//    char* plmsg;
-//    bool r = executePlugin({ "PluginName", 0 }, executableState, new const char* [3] {}, 3, &plres, &plmsg);
-//
-//    if (!r) {
-//        std::cout << "client: false status" << std::endl;
-//    }
-//    else {
-//        std::cout << "client: res: " << plres << ", msg: '" << plmsg << "'" << std::endl;
-//        delete[] plmsg;
-//    }
 //
 //}
