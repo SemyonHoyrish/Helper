@@ -138,12 +138,10 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
     <ClInclude Include="ArgParser.h" />
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CommonLib.h" />
-    <ClInclude Include="ConverterApp.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MultiKeyMap.h" />
     <ClInclude Include="NamedList.h" />
@@ -154,11 +152,9 @@
     <ClInclude Include="Value.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp" />
     <ClCompile Include="ArgParser.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
     <ClCompile Include="Buffer.cpp" />
-    <ClCompile Include="ConverterApp.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="MultiKeyMap.cpp" />
     <ClCompile Include="NamedList.cpp" />

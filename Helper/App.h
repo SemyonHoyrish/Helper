@@ -8,7 +8,9 @@
 class App
 {
 public:
-	explicit App(std::string name) : name(name) {
+	static const std::string Name;
+
+	explicit App() : _name(std::string(Name)) {
 
 	}
 
@@ -18,8 +20,9 @@ public:
 	// TODO: remove?!
 	//virtual const std::vector<std::string> aliases() const;
 
+	std::string name() const { return _name; }
+
 protected:
-	std::string name;
+	std::string _name;
 
 };
-

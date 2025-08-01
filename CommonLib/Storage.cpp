@@ -544,6 +544,48 @@ Status Storage::readRecordField(Reader* r, std::vector<NamedValue>& out) {
 	}
 }
 
+Status Storage::newFile()
+{
+	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
+
+	if (!file.good()) {
+		file.close();
+		return Status(StatusCode::SC_ERROR_UNAVAILABLE, "File is not good");
+	}
+
+	size_t size = MAX(1024, name.length() + description.length() + (64 / 8) * (2 + 2));
+	auto w = bwrealloc(NULL, size);
+	DEBUG_LOG_INFO("writer allocated");
+
+	// header
+	BinaryWriter_write_32(w, static_cast<uint32_t>(Storage::SpecialBytes::HeaderBegin));
+	DEBUG_LOG_INFO("written header begin");
+	// name
+	writeSize(w, name.length());
+	BinaryWriter_write_buff(w, reinterpret_cast<const uint8_t*>(name.c_str()), name.length());
+	DEBUG_LOG_INFO("writtern name");
+	// description
+	writeSize(w, description.length());
+	BinaryWriter_write_buff(w, reinterpret_cast<const uint8_t*>(description.c_str()), description.length());
+	DEBUG_LOG_INFO("written description");
+	//
+	BinaryWriter_write_32(w, static_cast<uint32_t>(Storage::SpecialBytes::HeaderEnd));
+	DEBUG_LOG_INFO("written header end");
+	// end header
+
+
+	auto buff = *(w->buff);
+	auto buff_size = w->size;
+	BinaryWriter_free(w);
+
+	file.write(reinterpret_cast<const char*>(buff), buff_size);
+	delete[] buff;
+
+	file.close();
+
+	return Status::OK();
+}
+
 constexpr size_t BUFF_SIZE = BASE_SIZE * 10;
 Status Storage::load() {
 	std::ifstream file(filename, std::ios_base::in | std::ios_base::binary);
@@ -690,6 +732,18 @@ Status Storage::load() {
 	}
 
 	return Status::OK();
+}
+
+Status Storage::load(bool newIfMissing) {
+	std::ifstream file(filename, std::ios_base::in | std::ios_base::binary);
+
+	if (!file.good()) {
+		file.close();
+		auto st = newFile();
+		if (st.isError()) return st;
+	}
+
+	return Storage::load();
 }
 
 // TODO: add Header -> version to save & load;

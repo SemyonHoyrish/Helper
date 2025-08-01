@@ -26,7 +26,7 @@ static inline void tolowercase(std::string& s) {
 
 #define LOGGING_LEVEL_WARN
 #define LOGGING_LEVEL_DEBUG
-#define LOGGING_LEVEL_INFO
+//#define LOGGING_LEVEL_INFO
 
 
 #ifndef LOGGING_STREAM

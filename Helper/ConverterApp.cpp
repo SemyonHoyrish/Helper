@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ConverterApp.h"
 
+const std::string ConverterApp::Name = "Converter";
 std::ostream& ConverterApp::stream = std::cout;
 
 Value parse(std::string v)

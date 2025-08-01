@@ -25,14 +25,31 @@ public:
 	}
 
 	Status init() { return init({}); }
-	Status init(std::initializer_list<std::pair<std::string, std::string>> defaultAliases)
+	Status init(std::initializer_list<std::pair<std::string, std::string>> defaultAliases, bool strict = false)
 	{
-		auto status = st->load();
+		auto status = st->load(true);
 		if (status.isError()) return status;
 
+		int skipped = 0;
 		for (auto it = defaultAliases.begin(); it != defaultAliases.end(); it++) {
+			if (findAlias(it->first).getStatus().isOk()) {
+				// Alias already exists
+
+				if (strict) {
+					return Status(StatusCode::SC_ERROR_ALREADY_EXISTS, it->first);
+				}
+
+				skipped++;
+				continue;
+			}
+
 			registerAlias(it->first, it->second);
 		}
+
+		status = std::move(st->save());
+		if (status.isError()) return status;
+
+		return Status(StatusCode::SC_OK, std::to_string(skipped));
 	}
 
 	bool registerAlias(std::string alias, std::string expansion);
@@ -42,8 +59,6 @@ public:
 
 	const Result<std::string> findAlias(std::string alias) const;
 	const Result<vector<std::string>> findAliasParts(std::string alias) const;
-
-
 
 private:
 

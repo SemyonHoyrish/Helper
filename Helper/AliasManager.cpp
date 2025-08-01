@@ -60,7 +60,7 @@ const Result<std::string> AliasManager::findAlias(std::string alias) const
 {
 	if (!st->isLoaded()) return { Status(StatusCode::SC_ERROR_UNAVAILABLE, "AliasManager was not initialized") };
 
-	std::string *out = nullptr;
+	std::string *out = new std::string;
 	auto status = st->readKVString(alias, out);
 	if (status.isError()) return status;
 

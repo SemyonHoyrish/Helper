@@ -201,7 +201,9 @@ public:
 		: name(name), filename(path + name + ".sdat"), readonly(readonly), serializers(), deserializers() {
 	}
 
+	COMMONLIB_API Status newFile();
 	COMMONLIB_API Status load();
+	COMMONLIB_API Status load(bool newIfMissing);
 	COMMONLIB_API Status save();
 
 	const std::string& getName() const

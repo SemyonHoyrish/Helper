@@ -17,15 +17,15 @@ public:
 	class Scheme
 	{
 	public:
-		Scheme(const vec& t, const vec& v);
+		COMMONLIB_API Scheme(const vec& t, const vec& v);
 		//Scheme(std::initializer_list<std::pair<vec, vec>> l);
 
-		const set& toggles() const
+		COMMONLIB_API const set& toggles() const
 		{
 			return _toggles;
 		}
 
-		const set& wvalue() const
+		COMMONLIB_API const set& wvalue() const
 		{
 			return _wvalue;
 		}
@@ -37,7 +37,7 @@ public:
 
 	ArgParser(Scheme s) : s(s) {}
 
-	std::map<std::string, std::string> parse(std::vector<std::string>& args) const;
+	COMMONLIB_API std::map<std::string, std::string> parse(std::vector<std::string>& args) const;
 	//std::map<std::string, std::string> parse(int argc, std::string argv[]);
 
 private:

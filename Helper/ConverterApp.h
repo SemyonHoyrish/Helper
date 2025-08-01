@@ -74,8 +74,9 @@ class ConverterApp :
     public App
 {
 public:
+    static const std::string Name;
 
-    explicit ConverterApp() : App("Converter") {
+    explicit ConverterApp() : App() {
     
 #ifdef _DEBUG
         assert(_validate());
@@ -85,13 +86,13 @@ public:
     }
 
     //COMMONLIB_API Status run(std::vector<std::string> args) override;
-    COMMONLIB_API Status run(const char* const args[], int count) override;
+    Status run(const char* const args[], int count) override;
 
     static std::ostream& stream;
 
 private:
 
-    COMMONLIB_API void init();
+    void init();
 
     bool _validate() {
         // TODO:
@@ -104,4 +105,3 @@ private:
     ConversionGraph<Unit, std::function<Value(Value)>> conversions;
 
 };
-

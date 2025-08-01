@@ -13,30 +13,69 @@
 
 static constexpr const char* STORAGE_DIR = "./storage/";
 
+static std::map<std::string, App*> Apps;
+
+App* search(std::string name)
+{
+	for (const auto& app : Apps) {
+		if (app.first == name) return app.second;
+	}
+
+	return nullptr;
+}
+
 int main(int argc, char* argv[])
 {
+	// init Apps
+	{
+		Apps = {
+			{ std::string(ConverterApp::Name), new ConverterApp() },
+		};
+	}
+
 	auto aliasManager = new AliasManager("aliasmanager", STORAGE_DIR);
-	aliasManager->init();
+	auto status = aliasManager->init({
+			{"converter", ConverterApp::Name},
+			{"conv", ConverterApp::Name},
+		});
+
+	if (status.isError()) {
+		std::cout << "Could not initialize AliasManager: " << status.msg << std::endl;
+		return status.intCode();
+	}
 
 	assert(argc > 1);
 
-	auto appName = std::string(argv[1]);
+	// Searching for a suitable App
+	{
+		auto appName = std::string(argv[1]);
+		auto app = search(appName);
+		if (app == nullptr) {
+			auto r = aliasManager->findAlias(appName);
+			if (r.getStatus().isOk()) {
+				app = search(*r.getValue());
+			}
+		}
+		if (app == nullptr) {
+			tolowercase(appName);
+			auto app = search(appName);
+		}
+		// lowercased alias
+		if (app == nullptr) {
+			auto r = aliasManager->findAlias(appName);
+			if (r.getStatus().isOk()) {
+				app = search(*r.getValue());
+			}
+		}
 
-
-	tolowercase(appName);
-
-	////std::vector<std::string> args;
-	////for (size_t i = 2; i < argc; ++i)
-	////	args.push_back({ argv[i] });
-
-	//if (appName == "converter") {
-	//	auto a = ConverterApp();
-	//	auto st = a.run(argv + 2, argc - 2);
-
-	//	if (st.isError()) std::cout << st.msg << std::endl;
-
-	//	assert(st.isOk());
-	//}
+		if (app == nullptr) {
+			std::cout << "'" << std::string(argv[1]) << "' is not an App or alias" << std::endl;
+		}
+		else {
+			auto status = app->run(argv + 2, argc - 2);
+			std::cout << "App exited with code " << static_cast<uint16_t>(status.code) << ": " << status.msg << std::endl;
+		}
+	}
 
 
 	return 0;
